@@ -10,6 +10,7 @@ if ARGV.length > 0
 			print res[member]
 			sep = "\t"
 		end
+		puts
 	end
 else
 	$stdin.each_line do |ip|
@@ -21,6 +22,7 @@ else
 				print res[member]
 				sep = "\t"
 			end
+			puts
 		end
 	end
 end
