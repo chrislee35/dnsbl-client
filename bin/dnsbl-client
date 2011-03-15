@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+require 'dnsbl-client'
+
+c = DNSBL::Client.new
+if ARGV.length > 0
+	c.lookup(ARGV).each do |res|
+		sep = ""
+		res.members.each do |member|
+			print sep
+			print res[member]
+			sep = "\t"
+		end
+	end
+else
+	$stdin.each_line do |ip|
+		ip.chomp!
+		c.lookup(ip).each do |res|
+			sep = ""
+			res.members.each do |member|
+				print sep
+				print res[member]
+				sep = "\t"
+			end
+		end
+	end
+end

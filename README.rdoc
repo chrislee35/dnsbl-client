@@ -1,7 +1,12 @@
 = dnsbl-client
 
-Description goes here.
+dnsbl-client queries DNS Blacklists for listings. Currently this only does IP lookups, but the next version will handle domains.
 
+	require "dnsbl-client"
+	c = DNSBL::Client.new 
+	c.lookup("203.150.14.85")
+	=> [#<struct DNSBL::DNSBLResult dnsbl="UCEPROTECT1", query="85.14.150.203.dnsbl-1.uceprotect.net", result="127.0.0.2", meaning="Blacklisted", timing=0.0247988700866699>, #<struct DNSBL::DNSBLResult dnsbl="BARRACUDA", query="85.14.150.203.b.barracudacentral.org", result="127.0.0.2", meaning="Listed", timing=0.0266849994659424>]
+	
 == Contributing to dnsbl-client
  
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet
