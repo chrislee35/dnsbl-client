@@ -1,10 +1,10 @@
---- 
-VIRBL: 
+---
+VIRBL:
   domain: virbl.dnsbl.bit.nl
   type: ip
   "0": OK
-  127.0.0.2: List of malware or phishing email sources
-SPAMHAUS: 
+  127.0.0.2: malware or phishing email sources
+SPAMHAUS:
   127.0.0.3: Illegal 3rd party exploits, including proxies, worms and trojan exploits
   127.0.0.4: Illegal 3rd party exploits, including proxies, worms and trojan exploits
   127.0.0.5: Illegal 3rd party exploits, including proxies, worms and trojan exploits
@@ -15,24 +15,24 @@ SPAMHAUS:
   127.0.0.2: Direct UBE sources, verified spam services and ROKSO spammers
   127.0.0.10: ISP Maintained Policy Block List
   127.0.0.11: SpamHaus Maintained Policy Block List
-URIBL: 
+URIBL:
   127.0.0.4: Address found in UBE/UCE, and probably honour opt-out requests
   domain: multi.uribl.com
-  type: ip
+  type: domain
   "0": OK
   127.0.0.8: Address not listed on black and are either very young (domain age via whois), or use whois privacy features to protect their identity.
   127.0.0.2: Address belonging to and used by spammers
-SURBL: 
+SURBL:
   127.0.0.64: jwSpamSpy + Prolocation data source
   127.0.0.32: AbuseButler spamvertised sites
   127.0.0.4: sa-blacklist and other sources
   domain: multi.surbl.org
-  type: ip
+  type: domain
   "0": OK
   127.0.0.8: Phishing data source
   127.0.0.16: Outblaze spamvertised sites
   127.0.0.2: SpamCop message-body URI domains
-NJABL: 
+NJABL:
   127.0.0.3: Dial-up/dynamic IP range
   127.0.0.4: Spam source
   127.0.0.5: Multi-stage open relays
@@ -42,27 +42,27 @@ NJABL:
   127.0.0.8: Insecure CGI web server, possible spam source
   127.0.0.9: Open proxy servers
   127.0.0.2: Open relay
-SPAMCOP: 
+SPAMCOP:
   domain: bl.spamcop.net
   type: ip
   "0": OK
   127.0.0.2: Spam source
-SORBS: 
-  127.0.0.3: List of Open SOCKS Proxy Servers
-  127.0.0.10: List of Dial Up Users
-  127.0.0.11: List of domain names where the A or MX records point to bad address space
-  127.0.0.4: List of Misc Open Proxy Servers
-  127.0.0.12: List of domain names where the owners have indicated no mail should ever be sent with these domains
-  127.0.0.5: List of Open SMTP Relays
-  127.0.0.6: List of Spam Sources
+SORBS:
+  127.0.0.3: Open SOCKS Proxy Servers
+  127.0.0.10: Dial Up Users
+  127.0.0.11: domain names where the A or MX records point to bad address space
+  127.0.0.4: Misc Open Proxy Servers
+  127.0.0.12: domain names where the owners have indicated no mail should ever be sent with these domains
+  127.0.0.5: Open SMTP Relays
+  127.0.0.6: Spam Sources
   domain: dnsbl.sorbs.net
-  127.0.0.7: List of web (WWW) server which have spammer abused vulnerabilities (e.g. FormMail scripts)
+  127.0.0.7: web (WWW) server which have spammer abused vulnerabilities (e.g. FormMail scripts)
   type: ip
   "0": OK
-  127.0.0.8: List of List of hosts demanding they are never tested by SORBS
-  127.0.0.9: List of Botnet/DDoS Zombies
-  127.0.0.2: List of Open HTTP Proxy Servers
-AHBL: 
+  127.0.0.8: hosts demanding they are never tested by SORBS
+  127.0.0.9: Botnet/DDoS Zombies
+  127.0.0.2: Open HTTP Proxy Servers
+AHBL:
   127.0.0.20: Blog/Wiki/Comment Spammer
   127.0.0.3: Open Proxy
   127.0.0.10: Shoot On Sight

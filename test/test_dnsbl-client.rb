@@ -11,4 +11,9 @@ class TestDnsblClient < Test::Unit::TestCase
 		res = c.lookup("127.0.0.2")
 		assert(res.length >= c.dnsbls.length)
 	end
+	should "return results for bad domains" do
+		c = DNSBL::Client.new
+		res = c.lookup("pfizer.viagra.aqybasej.gurdoctor.com")
+		assert(res.length >= 0)
+	end
 end
