@@ -125,11 +125,16 @@ module DNSBL
 				# rotate across our configured name servers and increment sent
 				@dnsbls.each do |name,config|
 					next unless config['type'] == itemtype
-					msg = _encode_query(item,itemtype,config['domain'])
-					@sockets[@socket_index].send(msg,0)
-					@socket_index += 1
-					@socket_index %= @sockets.length
-					sent += 1
+					begin
+						msg = _encode_query(item,itemtype,config['domain'])
+						@sockets[@socket_index].send(msg,0)
+						@socket_index += 1
+						@socket_index %= @sockets.length
+						sent += 1
+					rescue Exception => e
+						puts e
+						puts e.backtrace.join("\n")
+					end
 				end
 				# while we still expect answers
 				while sent > 0
@@ -139,8 +144,13 @@ module DNSBL
 					break unless r
 					# for each reply, decode it and receive results, decrement the pending answers
 					r.each do |s|
-						response = _decode_response(s.recv(4096))
-						results += response
+						begin
+							response = _decode_response(s.recv(4096))
+							results += response
+						rescue Exception => e
+							puts e
+							puts e.backtrace.join("\n")
+						end
 						sent -= 1
 					end
 				end
