@@ -4,6 +4,14 @@ require 'socket'
 require 'thread'
 require 'yaml'
 
+class Resolv::DNS::Config
+	def nameservers
+		lazy_initialize
+		@nameservers ||= @nameserver.map {|i| [i, 53] }
+		@nameservers
+	end
+end
+
 module DNSBL
 	# DNSBLResult holds the result of a DNSBL lookup
 	# dnsbl: name of the DNSBL that returned the answer
@@ -25,7 +33,8 @@ module DNSBL
 				@ttld << l.strip
 			end
 			@sockets = []
-			Resolv::DNS::Config.new.nameserver_port.each do |ip,port|
+			config = Resolv::DNS::Config.new
+			config.nameservers.each do |ip,port|
 				sock = UDPSocket.new
 				sock.connect(ip,port)
 				@sockets << sock
@@ -85,6 +94,7 @@ module DNSBL
 					ip = [$4,$3,$2,$1].join(".")
 					domain = $5
 					@dnsbls.each do |dnsblname, config|
+						next unless data.is_a? Resolv::DNS::Resource::IN::A
 						if domain == config['domain']
 							meaning = config[data.address.to_s] || data.address.to_s
 							results << DNSBLResult.new(dnsblname, ip, name.to_s, data.address.to_s, meaning, Time.now.to_f - @starttime)

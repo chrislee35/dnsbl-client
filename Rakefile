@@ -19,8 +19,8 @@ Jeweler::Tasks.new do |gem|
 	gem.description = %Q{simple interface to lookup blacklists results}
 	gem.email = "rubygems@chrislee.dhs.org"
 	gem.authors = ["Chris Lee"]
-	gem.signing_key = "#{ENV['HOME']}/bin/ruby/rubygems/gem-private_key.pem"
-	gem.cert_chain  = ["#{ENV['HOME']}/bin/ruby/rubygems/gem-public_cert.pem"]
+	gem.signing_key = "#{File.dirname(__FILE__)}/../gem-private_key.pem"
+	gem.cert_chain  = ["#{File.dirname(__FILE__)}/../gem-public_cert.pem"]
 	gem.files = FileList["{bin,lib}/**/*"].to_a
 	gem.executables = ["dnsbl-client"]
 end
