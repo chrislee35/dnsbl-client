@@ -6,8 +6,15 @@ require 'yaml'
 
 class Resolv::DNS::Config
 	def nameservers
+		return @nameservers if @nameservers
+
 		lazy_initialize
-		@nameservers ||= @nameserver.map {|i| [i, 53] }
+		if self.respond_to? :nameserver_port
+			@nameservers = nameserver_port
+		else
+			@nameservers = @nameserver.map {|i| [i, 53] }
+		end
+
 		@nameservers
 	end
 end
