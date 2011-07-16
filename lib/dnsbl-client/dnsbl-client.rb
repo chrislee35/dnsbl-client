@@ -27,11 +27,17 @@ module DNSBL
 		# initialize a new DNSBL::Client object
 		# the config file automatically points to a YAML file containing the list of DNSBLs and their return codes
 		# the two-level-tlds file lists most of the two level tlds, needed for hostname to domain normalization
-		def initialize(configfile = File.dirname(__FILE__)+"/dnsbl.yaml", ttldfile = File.dirname(__FILE__)+"/two-level-tlds")
+		def initialize(configfile = File.dirname(__FILE__)+"/dnsbl.yaml", 
+									 two_level_tldfile = File.dirname(__FILE__)+"/two-level-tlds",
+									 three_level_tldfile = File.dirname(__FILE__)+"/three-level-tlds")
 			@dnsbls = YAML.load(File.open(configfile).read)
-			@ttld = []
-			File.open(ttldfile).readlines.each do |l|
-				@ttld << l.strip
+			@two_level_tld = []
+			@three_level_tld = []
+			File.open(two_level_tldfile).readlines.each do |l|
+				@two_level_tld << l.strip
+			end
+			File.open(three_level_tldfile).readlines.each do |l|
+				@three_level_tld << l.strip
 			end
 			@sockets = []
 			config = Resolv::DNS::Config.new
@@ -51,9 +57,12 @@ module DNSBL
 			parts = domain.gsub(/^\w{1,20}:\/\//,'').gsub(/[\/\?\:].*/,'').gsub(/.*?\@/,'').split(/\./)
 			# grab the last two parts of the domain
 			dom = parts[-2,2].join(".")
-			# if the dom is in the ttld list, then use three parts
-			if @ttld.index(dom)
+			# if the dom is in the two_level_tld list, then use three parts
+			if @two_level_tld.index(dom)
 				dom = parts[-3,3].join(".")
+			end
+			if @three_level_tld.index(dom)
+				dom = parts[-4,4].join(".")
 			end
 			dom
 		end
