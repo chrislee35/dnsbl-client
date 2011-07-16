@@ -5,12 +5,12 @@
 
 Gem::Specification.new do |s|
   s.name = %q{dnsbl-client}
-  s.version = "0.2.4"
+  s.version = "0.3.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Chris Lee"]
   s.cert_chain = ["/Users/chris/Documents/projects/rubygems/dnsbl-client/../gem-public_cert.pem"]
-  s.date = %q{2011-07-15}
+  s.date = %q{2011-07-16}
   s.description = %q{simple interface to lookup blacklists results}
   s.email = %q{rubygems@chrislee.dhs.org}
   s.executables = ["dnsbl-client"]
@@ -23,6 +23,7 @@ Gem::Specification.new do |s|
     "lib/dnsbl-client.rb",
     "lib/dnsbl-client/dnsbl-client.rb",
     "lib/dnsbl-client/dnsbl.yaml",
+    "lib/dnsbl-client/three-level-tlds",
     "lib/dnsbl-client/two-level-tlds"
   ]
   s.homepage = %q{http://github.com/chrislee35/dnsbl-client}
