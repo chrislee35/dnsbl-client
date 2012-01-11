@@ -102,6 +102,7 @@ DRONEBL:
   127.0.0.13: Brute force attackers
   127.0.0.14: Open Wingate Proxy
   127.0.0.15: Compromised router / gateway
+  127.0.0.17: Automatically determined botnet IPs (experimental)
   127.0.0.255: Unknown
 BARRACUDA:
   domain: b.barracudacentral.org
