@@ -41,4 +41,11 @@ class TestDnsblClient < Test::Unit::TestCase
 		assert_equal("example.act.edu.au", c.normalize("www.example.act.edu.au"))
 		assert_equal("example.act.edu.au", c.normalize("foo.bar.example.act.edu.au"))
 	end
+
+    should "allow concat in list domain" do
+        c = DNSBL::Client.new
+
+        result = c._encode_query('127.0.0.1', 'ip', 'test.%s.example.org')
+        assert_equal(result, "\b3\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x04test\x011\x010\x010\x03127\aexample\x03org\x00\x00\x01\x00\x01")
+    end
 end
