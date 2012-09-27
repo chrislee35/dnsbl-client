@@ -94,11 +94,11 @@ module DNSBL
 				label = normalize(item)
 			end
 
-            if domain.match '%s'
-                lookup = domain % label
-            else
+      if domain.match '%s'
+        lookup = domain % label
+      else
 				lookup = "#{label}.#{domain}"
-            end
+      end
 
 			txid = lookup.sum
 			message = Resolv::DNS::Message.new(txid)
