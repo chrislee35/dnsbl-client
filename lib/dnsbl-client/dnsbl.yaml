@@ -180,7 +180,7 @@ NOMOREFUN:
   127.0.0.7: Ignoring complaints of spamming by customers
   127.0.0.8: Please update your formmail.pl script
   127.0.0.9: See http://moensted.dk/spam/no-more-funn/?addr=$
-  127.0.0.10: posible open proxies
+  127.0.0.10: Possible open proxy
   127.0.0.11: Please stop testing our servers
 SPAMCANNIBAL:
   domain: bl.spamcannibal.org
@@ -203,6 +203,12 @@ WHITELIST:
   type: ip
   127.0.0.2: Whitelisted
 BACKSCATTERER:
-  domains: ips.backscatterer.org
+  domain: ips.backscatterer.org
   type: ip
   127.0.0.2: Backscatterer
+PROJECTHONEYPOT:
+  domain: dnsbl.httpbl.org
+  type: ip
+  apikey: abcdefghijkl
+  disabled: true
+  decoder: phpot_decoder

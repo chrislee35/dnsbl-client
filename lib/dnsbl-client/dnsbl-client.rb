@@ -12,7 +12,7 @@ class Resolv::DNS::Config
 		if self.respond_to? :nameserver_port
 			@nameservers = nameserver_port
 		else
-			@nameserver ||= ['4.2.2.2','4.2.2.5','8.8.4.4','8.8.8.8','208.67.222.222','208.67.220.220']
+			@nameserver ||= ['4.2.2.2','4.2.2.5','8.8.4.4','8.8.8.8','208.67.222.222','208.67.220.220'].sort {rand}
 			@nameservers ||= @nameserver.map {|i| [i, 53] }
 		end
 		@nameservers
@@ -33,10 +33,10 @@ module DNSBL
 		# initialize a new DNSBL::Client object
 		# the config file automatically points to a YAML file containing the list of DNSBLs and their return codes
 		# the two-level-tlds file lists most of the two level tlds, needed for hostname to domain normalization
-		def initialize(configfile = File.dirname(__FILE__)+"/dnsbl.yaml", 
+		def initialize(config = YAML.load(File.open(File.dirname(__FILE__)+"/dnsbl.yaml").read),
 									 two_level_tldfile = File.dirname(__FILE__)+"/two-level-tlds",
 									 three_level_tldfile = File.dirname(__FILE__)+"/three-level-tlds")
-			@dnsbls = YAML.load(File.open(configfile).read)
+			@dnsbls = config
 			@two_level_tld = []
 			@three_level_tld = []
 			File.open(two_level_tldfile).readlines.each do |l|
@@ -86,7 +86,7 @@ module DNSBL
 		end
 		
 		# converts an ip or a hostname into the DNS query packet requires to lookup the result
-		def _encode_query(item,itemtype,domain)
+		def _encode_query(item,itemtype,domain,apikey=nil)
 			label = nil
 			if itemtype == 'ip'
 				label = item.split(/\./).reverse.join(".")
@@ -94,6 +94,9 @@ module DNSBL
 				label = normalize(item)
 			end
 			lookup = "#{label}.#{domain}"
+			if apikey
+				lookup = "#{apikey}.#{lookup}"
+			end
 			txid = lookup.sum
 			message = Resolv::DNS::Message.new(txid)
 			message.rd = 1
@@ -120,7 +123,14 @@ module DNSBL
 				else
 					@dnsbls.each do |dnsblname, config|
 						if name.to_s.end_with?(config['domain'])
-							meaning = config[data.address.to_s] || data.address.to_s
+							meaning = nil
+							if config['decoder']
+								meaning = self.send(("__"+config['decoder']).to_sym, data.address.to_s)
+							elsif config[data.address.to_s]
+								meaning = config[data.address.to_s]
+							else 
+								meaning = data.address.to_s
+							end
 							results << DNSBLResult.new(dnsblname, name.to_s.gsub("."+config['domain'],''), name.to_s, data.address.to_s, meaning, Time.now.to_f - @starttime)
 							break
 						end
@@ -128,6 +138,39 @@ module DNSBL
 				end
 			end
 			results
+		end
+		
+		def __phpot_decoder(ip)
+			octets = ip.split(/\./)
+			if octets.length != 4 or octets[0] != "127"
+				return "invalid response"
+			elsif octets[3] == "0"
+				search_engines = ["undocumented", "AltaVista", "Ask", "Baidu", "Excite", "Google", "Looksmart", "Lycos", "MSN", "Yahoo", "Cuil", "InfoSeek", "Miscellaneous"]
+				sindex = octets[2].to_i
+				if sindex >= search_engines.length
+					return "type=search engine,engine=unknown"
+				else
+					return "type=search engine,engine=#{search_engines[sindex]}"
+				end
+			else
+				days, threatscore, flags = octets[1,3]
+				flags = flags.to_i
+				types = []
+				if (flags & 0x1) == 0x1
+					types << "suspicious"
+				end
+				if (flags & 0x2) == 0x2
+					types << "harvester"
+				end
+				if (flags & 0x4) == 0x4
+					types << "comment spammer"
+				end
+				if (flags & 0xf8) > 0
+					types << "reserved"
+				end
+				type = types.join(",")
+				return "days=#{days},score=#{threatscore},type=#{type}"
+			end
 		end
 		
 		# the main method of this class, lookup performs the sending of DNS queries for the items
@@ -150,9 +193,10 @@ module DNSBL
 				# for each dnsbl that supports our type, create the DNS query packet and send it
 				# rotate across our configured name servers and increment sent
 				@dnsbls.each do |name,config|
+					next if config['disabled']
 					next unless config['type'] == itemtype
 					begin
-						msg = _encode_query(item,itemtype,config['domain'])
+						msg = _encode_query(item,itemtype,config['domain'],config['apikey'])
 						@sockets[@socket_index].send(msg,0)
 						@socket_index += 1
 						@socket_index %= @sockets.length
