@@ -1,1 +1,0 @@
-require 'dnsbl-client/dnsbl-client'
