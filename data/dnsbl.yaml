@@ -62,30 +62,6 @@ SORBS:
   127.0.0.8: hosts demanding they are never tested by SORBS
   127.0.0.9: Botnet/DDoS Zombies
   127.0.0.2: Open HTTP Proxy Servers
-AHBL:
-  127.0.0.20: Blog/Wiki/Comment Spammer
-  127.0.0.3: Open Proxy
-  127.0.0.10: Shoot On Sight
-  127.0.0.11: Non-RFC Compliant (missing postmaster or abuse)
-  127.0.0.4: Spam Source
-  127.0.0.12: Does not properly handle 5xx errors
-  127.0.0.5: Provisional Spam Source Listing block (will be removed if spam stops)
-  127.0.0.127: Other
-  127.0.0.13: Other Non-RFC Compliant
-  127.0.0.6: Formmail Spam
-  domain: dnsbl.ahbl.org
-  127.0.0.14: Compromised System => DDoS
-  127.0.0.7: Spam Supporter
-  type: ip
-  "0": OK
-  127.0.0.15: Compromised System => Relay
-  127.0.0.8: Spam Supporter (indirect)
-  127.0.0.16: Compromised System => Autorooter/Scanner
-  127.0.0.9: End User (non mail system)
-  127.0.0.17: Compromised System => Worm or mass mailing virus
-  127.0.0.18: Compromised System => Other virus
-  127.0.0.19: Open Proxy
-  127.0.0.2: Open Relay
 DRONEBL:
   domain: dnsbl.dronebl.org
   type: ip
@@ -139,11 +115,6 @@ MAILSHELL:
 CBL:
   domain: cbl.abuseat.org
   type: ip
-  0: OK
-  127.0.0.2: Blacklisted
-RHSBL:
-  domain: rhsbl.ahbl.org
-  type: domain
   0: OK
   127.0.0.2: Blacklisted
 FIVETENSG:
