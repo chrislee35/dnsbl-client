@@ -11,10 +11,11 @@ require_relative 'helper'
 $nameservers = [['4.2.2.2',53]]
 
 class TestDNSBLClient < Test::Unit::TestCase
-	def test_return_no_hits_for_127_0_0_255
+	def test_return_no_hits_for_127_0_0_254
 		c = DNSBL::Client.new
 		c.nameservers = $nameservers
-		res = c.lookup("127.0.0.255")
+    # for some reason DRONEBL returns 127.0.0.255 when queried for 127.0.0.255, so I'll use 127.0.0.254
+		res = c.lookup("127.0.0.254")
 		assert_equal(0,res.length)
 	end
 	def test_return_all_lists_for_127_0_0_2
