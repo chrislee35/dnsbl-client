@@ -1,5 +1,6 @@
-module DNSBL
+module DNSBL # :nodoc:
   class Client
-    VERSION = "1.0.1"
+    # Current version of the dnsbl-client gem
+    VERSION = "1.0.2"
   end
 end

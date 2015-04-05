@@ -6,7 +6,9 @@ require 'socket'
 require 'thread'
 require 'yaml'
 
+# This is a monkeypatch for the built-in Ruby DNS resolver to specify nameservers 
 class Resolv::DNS::Config
+  # Monkeypatch the nameservers to set a default if there are no defined nameservers
 	def nameservers
 		return @nameservers if @namservers
 		
@@ -21,7 +23,7 @@ class Resolv::DNS::Config
 	end
 end
 
-module DNSBL
+module DNSBL # :nodoc:
 	# DNSBLResult holds the result of a DNSBL lookup
 	# dnsbl: name of the DNSBL that returned the answer
 	# item: the item queried, an IP or a domain
@@ -57,7 +59,8 @@ module DNSBL
 			end
 			@socket_index = 0
 		end
-		
+    
+		# sets the nameservers used for performing DNS lookups in round-robin fashion
 		def nameservers=(ns=Resolv::DNS::Config.new.nameservers)
 			@sockets.each do |s|
 				s.close
@@ -120,76 +123,9 @@ module DNSBL
 			message.encode
 		end
 		
-		# takes a DNS response and converts it into a DNSBLResult
-		def _decode_response(buf)
-			reply = Resolv::DNS::Message.decode(buf)
-			results = []
-			reply.each_answer do |name,ttl,data|
-				if name.to_s =~ /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(.+)$/
-					ip = [$4,$3,$2,$1].join(".")
-					domain = $5
-					@dnsbls.each do |dnsblname, config|
-						next unless data.is_a? Resolv::DNS::Resource::IN::A
-						if domain == config['domain']
-							meaning = config[data.address.to_s] || data.address.to_s
-							results << DNSBLResult.new(dnsblname, ip, name.to_s, data.address.to_s, meaning, Time.now.to_f - @starttime)
-							break
-						end
-					end
-				else
-					@dnsbls.each do |dnsblname, config|
-						if name.to_s.end_with?(config['domain'])
-							meaning = nil
-							if config['decoder']
-								meaning = self.send(("__"+config['decoder']).to_sym, data.address.to_s)
-							elsif config[data.address.to_s]
-								meaning = config[data.address.to_s]
-							else 
-								meaning = data.address.to_s
-							end
-							results << DNSBLResult.new(dnsblname, name.to_s.gsub("."+config['domain'],''), name.to_s, data.address.to_s, meaning, Time.now.to_f - @starttime)
-							break
-						end
-					end
-				end
-			end
-			results
-		end
 		
-		def __phpot_decoder(ip)
-			octets = ip.split(/\./)
-			if octets.length != 4 or octets[0] != "127"
-				return "invalid response"
-			elsif octets[3] == "0"
-				search_engines = ["undocumented", "AltaVista", "Ask", "Baidu", "Excite", "Google", "Looksmart", "Lycos", "MSN", "Yahoo", "Cuil", "InfoSeek", "Miscellaneous"]
-				sindex = octets[2].to_i
-				if sindex >= search_engines.length
-					return "type=search engine,engine=unknown"
-				else
-					return "type=search engine,engine=#{search_engines[sindex]}"
-				end
-			else
-				days, threatscore, flags = octets[1,3]
-				flags = flags.to_i
-				types = []
-				if (flags & 0x1) == 0x1
-					types << "suspicious"
-				end
-				if (flags & 0x2) == 0x2
-					types << "harvester"
-				end
-				if (flags & 0x4) == 0x4
-					types << "comment spammer"
-				end
-				if (flags & 0xf8) > 0
-					types << "reserved"
-				end
-				type = types.join(",")
-				return "days=#{days},score=#{threatscore},type=#{type}"
-			end
-		end
-		
-		# the main method of this class, lookup performs the sending of DNS queries for the items
+		# lookup performs the sending of DNS queries for the given items
+    # returns an array of DNSBLResult
 		def lookup(item)
 			# if item is an array, use it, otherwise make it one
 			items = item
@@ -242,6 +178,78 @@ module DNSBL
 				end
 			end
 			results
+		end
+    
+    private
+    
+		# takes a DNS response and converts it into a DNSBLResult
+		def _decode_response(buf)
+			reply = Resolv::DNS::Message.decode(buf)
+			results = []
+			reply.each_answer do |name,ttl,data|
+				if name.to_s =~ /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(.+)$/
+					ip = [$4,$3,$2,$1].join(".")
+					domain = $5
+					@dnsbls.each do |dnsblname, config|
+						next unless data.is_a? Resolv::DNS::Resource::IN::A
+						if domain == config['domain']
+							meaning = config[data.address.to_s] || data.address.to_s
+							results << DNSBLResult.new(dnsblname, ip, name.to_s, data.address.to_s, meaning, Time.now.to_f - @starttime)
+							break
+						end
+					end
+				else
+					@dnsbls.each do |dnsblname, config|
+						if name.to_s.end_with?(config['domain'])
+							meaning = nil
+							if config['decoder']
+								meaning = self.send(("__"+config['decoder']).to_sym, data.address.to_s)
+							elsif config[data.address.to_s]
+								meaning = config[data.address.to_s]
+							else 
+								meaning = data.address.to_s
+							end
+							results << DNSBLResult.new(dnsblname, name.to_s.gsub("."+config['domain'],''), name.to_s, data.address.to_s, meaning, Time.now.to_f - @starttime)
+							break
+						end
+					end
+				end
+			end
+			results
+		end
+		
+    # decodes the response from Project Honey Pot's service
+		def __phpot_decoder(ip)
+			octets = ip.split(/\./)
+			if octets.length != 4 or octets[0] != "127"
+				return "invalid response"
+			elsif octets[3] == "0"
+				search_engines = ["undocumented", "AltaVista", "Ask", "Baidu", "Excite", "Google", "Looksmart", "Lycos", "MSN", "Yahoo", "Cuil", "InfoSeek", "Miscellaneous"]
+				sindex = octets[2].to_i
+				if sindex >= search_engines.length
+					return "type=search engine,engine=unknown"
+				else
+					return "type=search engine,engine=#{search_engines[sindex]}"
+				end
+			else
+				days, threatscore, flags = octets[1,3]
+				flags = flags.to_i
+				types = []
+				if (flags & 0x1) == 0x1
+					types << "suspicious"
+				end
+				if (flags & 0x2) == 0x2
+					types << "harvester"
+				end
+				if (flags & 0x4) == 0x4
+					types << "comment spammer"
+				end
+				if (flags & 0xf8) > 0
+					types << "reserved"
+				end
+				type = types.join(",")
+				return "days=#{days},score=#{threatscore},type=#{type}"
+			end
 		end
 	end
 end
