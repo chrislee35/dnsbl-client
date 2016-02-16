@@ -1,2 +1,4 @@
-require 'test/unit'
-require File.expand_path('../../lib/dnsbl/client.rb', __FILE__)
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+require 'dnsbl/client'
+
+require 'minitest/autorun'

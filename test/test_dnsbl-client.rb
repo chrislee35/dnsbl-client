@@ -10,7 +10,7 @@ require_relative 'helper'
 
 $nameservers = [['4.2.2.2',53]]
 
-class TestDNSBLClient < Test::Unit::TestCase
+class TestDNSBLClient < Minitest::Test
 	def test_return_no_hits_for_127_0_0_254
 		c = DNSBL::Client.new
 		c.nameservers = $nameservers
@@ -31,7 +31,7 @@ class TestDNSBLClient < Test::Unit::TestCase
 		assert(res.length >= 0)
 	end
 	def test_interpret_project_honeypot_results
-		assert_not_nil(ENV['PHPAPIKEY'], "Project Honeypot API Key Required.  Please set PHPAPIKEY.")
+		refute_nil(ENV['PHPAPIKEY'], "Project Honeypot API Key Required.  Please set PHPAPIKEY.")
 		apikey = ENV['PHPAPIKEY']
 		config = YAML.load("---
 PROJECTHONEYPOT:
