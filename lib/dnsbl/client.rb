@@ -10,7 +10,7 @@ require 'yaml'
 class Resolv::DNS::Config
   # Monkeypatch the nameservers to set a default if there are no defined nameservers
 	def nameservers
-		return @nameservers if @namservers
+		return @nameservers if @nameservers
 		
 		lazy_initialize
 		if self.respond_to? :nameserver_port

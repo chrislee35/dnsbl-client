@@ -2,7 +2,6 @@
 require 'dnsbl/client'
 
 c = DNSBL::Client.new
-c.nameservers = [['4.2.2.2',53]]
 
 if ARGV.length > 0
 	c.lookup(ARGV).each do |res|
