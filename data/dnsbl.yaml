@@ -187,4 +187,8 @@ TOREXITNODE:
   domain: torexit.dan.me.uk
   type: ip
   127.0.0.100: Tor Exit Node
-  
+SPFBL:
+  domain: dnsbl.spfbl.net
+  type: ip
+  127.0.0.2: Ignoring complaints of spamming by customers. 
+  127.0.0.3: Dynamic IP, generic rDNS, no rDNS or invalid FCrDNS.
