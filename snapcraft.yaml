@@ -4,7 +4,7 @@ summary: simple interface to lookup blacklists results
 description: |
   dnsbl-client queries DNS Blacklists for listings. Currently this only does IP lookups, but the next version will handle domains.
 grade: stable # must be 'stable' to release into candidate/stable channels
-confinement: devmode # use 'strict' once you have the right plugs and slots
+confinement: strict # use 'strict' once you have the right plugs and slots
 
 parts:
   dnsbl-client:
