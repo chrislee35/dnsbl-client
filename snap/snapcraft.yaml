@@ -10,8 +10,9 @@ parts:
   dnsbl-client:
     source: .
     plugin: nil
-    build: /usr/bin/gem build dnsbl-client.gemspec
-    install: /usr/bin/gem install dnsbl-client-*.gem
+    override-build:|
+      /usr/bin/gem build dnsbl-client.gemspec
+      /usr/bin/gem install dnsbl-client-*.gem
     build-packages: [ruby]
     stage-packages: [ruby]
 
