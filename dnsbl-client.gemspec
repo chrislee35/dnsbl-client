@@ -13,7 +13,8 @@ Gem::Specification.new do |spec|
 	spec.homepage      = "http://github.com/chrislee35/dnsbl-client"
 	spec.license       = "MIT"
 
-	spec.files         = `git ls-files -x snapscaft.yaml`.split($/)
+	spec.files         = Dir['lib/*.rb'] + Dir['lib/**/*.rb'] + Dir['bin/*']
+        spec.files         += Dir['data/*'] + Dir['test/*']
 	spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
 	spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
 	spec.require_paths = ["lib"]
