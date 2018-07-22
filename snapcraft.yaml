@@ -10,9 +10,9 @@ parts:
   dnsbl-client:
     source: .
     plugin: nil
-    build: gem build dnsbl-client.gemspec
-    install: gem install dnsbl-client-*.gem -i $SNAPCRAFT_PART_INSTALL
-    build-packages: []
+    build: /usr/bin/gem build dnsbl-client.gemspec
+    install: /usr/bin/gem install dnsbl-client-*.gem -i $SNAPCRAFT_PART_INSTALL
+    build-packages: [ruby]
     stage-packages: [ruby]
 
 apps:
