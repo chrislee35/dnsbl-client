@@ -11,7 +11,9 @@ parts:
     source: .
     plugin: ruby
     build: /usr/bin/gem build dnsbl-client.gemspec
-    install: /usr/bin/gem install dnsbl-client-*.gem 
+    install: /usr/bin/gem install dnsbl-client-*.gem
+    build-packages: [ruby]
+    stage-packages: [ruby]
 
 apps:
   dnsbl-client:
