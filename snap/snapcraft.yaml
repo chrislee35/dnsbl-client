@@ -10,7 +10,7 @@ parts:
   dnsbl-client:
     source: .
     plugin: nil
-    override-build:|
+    override-build: |
       /usr/bin/gem build dnsbl-client.gemspec
       /usr/bin/gem install dnsbl-client-*.gem
     build-packages: [ruby]
