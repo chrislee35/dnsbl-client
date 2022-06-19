@@ -2,6 +2,7 @@
 require 'dnsbl/client'
 
 c = DNSBL::Client.new
+c.first_only = true
 
 if ARGV.length > 0
 	c.lookup(ARGV).each do |res|

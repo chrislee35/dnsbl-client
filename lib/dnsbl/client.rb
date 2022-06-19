@@ -5,12 +5,13 @@ require 'resolv'
 require 'socket'
 require 'thread'
 require 'yaml'
+require 'ipaddr'
 
 # This is a monkeypatch for the built-in Ruby DNS resolver to specify nameservers 
 class Resolv::DNS::Config
   # Monkeypatch the nameservers to set a default if there are no defined nameservers
 	def nameservers
-		return @nameservers if @nameservers
+		return @nameservers if defined?(@nameservers)
 		
 		lazy_initialize
 		if self.respond_to? :nameserver_port
@@ -41,6 +42,8 @@ module DNSBL # :nodoc:
 									 two_level_tldfile = File.expand_path('../../../data', __FILE__)+"/two-level-tlds",
 									 three_level_tldfile = File.expand_path('../../../data', __FILE__)+"/three-level-tlds")
 			@dnsbls = config
+      @timeout = 1.5
+      @first_only = false
 			@two_level_tld = []
 			@three_level_tld = []
 			File.open(two_level_tldfile).readlines.each do |l|
@@ -59,6 +62,14 @@ module DNSBL # :nodoc:
 			end
 			@socket_index = 0
 		end
+    
+    def timeout=(timeout_seconds)
+      @timeout = timeout_seconds
+    end
+    
+    def first_only=(first_only_boolean)
+      @first_only = first_only_boolean
+    end
     
 		# sets the nameservers used for performing DNS lookups in round-robin fashion
 		def nameservers=(ns=Resolv::DNS::Config.new.nameservers)
@@ -108,7 +119,8 @@ module DNSBL # :nodoc:
 		def _encode_query(item,itemtype,domain,apikey=nil)
 			label = nil
 			if itemtype == 'ip'
-				label = item.split(/\./).reverse.join(".")
+        ip = IPAddr.new(item)
+        label = ip.reverse.gsub('.ip6.arpa', '').gsub('.in-addr.arpa', '')
 			elsif itemtype == 'domain'
 				label = normalize(item)
 			end
@@ -142,6 +154,8 @@ module DNSBL # :nodoc:
 				@starttime = Time.now.to_f
 				# determine the type of query
 				itemtype = (item =~ /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/) ? 'ip' : 'domain'
+        itemtype = (item =~ /^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$/) ? 'ip' : itemtype
+
 				# for each dnsbl that supports our type, create the DNS query packet and send it
 				# rotate across our configured name servers and increment sent
 				@dnsbls.each do |name,config|
@@ -160,11 +174,12 @@ module DNSBL # :nodoc:
 				end
 				# while we still expect answers
 				while sent > 0
-					# wait on the socket for maximally 1.5 seconds
-					r,_,_ = IO.select(@sockets,nil,nil,1.5)
+					# wait on the socket for maximally @timeout seconds
+					r,_,_ = IO.select(@sockets,nil,nil,@timeout)
 					# if we time out, break out of the loop
 					break unless r
 					# for each reply, decode it and receive results, decrement the pending answers
+          first_only = false
 					r.each do |s|
 						begin
 							response = _decode_response(s.recv(4096))
@@ -174,7 +189,14 @@ module DNSBL # :nodoc:
 							puts e.backtrace.join("\n")
 						end
 						sent -= 1
+            if @first_only
+              first_only = true
+              break
+            end
 					end
+          if first_only
+            break
+          end
 				end
 			end
 			results
