@@ -5,7 +5,7 @@ on:
 
 jobs:
   test:
-    name: ${{ ruby-${{ matrix.ruby }}
+    name: ruby-${{ matrix.ruby }}
     runs-on: ubuntu-latest
 
     strategy:
