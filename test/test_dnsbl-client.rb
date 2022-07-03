@@ -44,7 +44,7 @@ class TestDNSBLClient < Minitest::Test
 
   def test_interpret_project_honeypot_results
     apikey = ENV.fetch 'PHPAPIKEY', nil
-    skip 'Project Honeypot API Key Required for this test. Please set PHPAPIKEY.' if apikey.empty?
+    skip 'Project Honeypot API Key Required for this test. Please set PHPAPIKEY.' if apikey
     config = YAML.safe_load("---
 PROJECTHONEYPOT:
   domain: dnsbl.httpbl.org
