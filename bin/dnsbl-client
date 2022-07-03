@@ -1,30 +1,32 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 require 'dnsbl/client'
 
 c = DNSBL::Client.new
 c.first_only = true
 
-if ARGV.length > 0
-	c.lookup(ARGV).each do |res|
-		sep = ""
-		res.members.each do |member|
-			print sep
-			print res[member]
-			sep = "\t"
-		end
-		puts
-	end
+if ARGV.length.positive?
+  c.lookup(ARGV).each do |res|
+    sep = ''
+    res.members.each do |member|
+      print sep
+      print res[member]
+      sep = "\t"
+    end
+    puts
+  end
 else
-	$stdin.each_line do |ip|
-		ip.chomp!
-		c.lookup(ip).each do |res|
-			sep = ""
-			res.members.each do |member|
-				print sep
-				print res[member]
-				sep = "\t"
-			end
-			puts
-		end
-	end
+  $stdin.each_line do |ip|
+    ip.chomp!
+    c.lookup(ip).each do |res|
+      sep = ''
+      res.members.each do |member|
+        print sep
+        print res[member]
+        sep = "\t"
+      end
+      puts
+    end
+  end
 end

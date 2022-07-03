@@ -178,7 +178,7 @@ PROJECTHONEYPOT:
   type: ip
   apikey: abcdefghijkl
   disabled: true
-  decoder: phpot_decoder
+  decoder: phpot
 TOREXITNODE:
   domain: torexit.dan.me.uk
   type: ip
@@ -186,5 +186,5 @@ TOREXITNODE:
 SPFBL:
   domain: dnsbl.spfbl.net
   type: ip
-  127.0.0.2: Ignoring complaints of spamming by customers. 
+  127.0.0.2: Ignoring complaints of spamming by customers.
   127.0.0.3: Dynamic IP, generic rDNS, no rDNS or invalid FCrDNS.
