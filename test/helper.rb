@@ -1,4 +1,6 @@
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-require 'dnsbl/client'
+# frozen_string_literal: true
 
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+
+require 'dnsbl/client'
 require 'minitest/autorun'

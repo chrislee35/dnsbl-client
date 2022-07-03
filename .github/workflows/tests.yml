@@ -1,0 +1,34 @@
+name: Tests
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: ruby-${{ matrix.ruby }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        ruby: ['2.7', '3.0', '3.1']
+      fail-fast: false
+
+    steps:
+      - name: Checkout git
+        uses: actions/checkout@v2
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup gems
+        run: |
+          bundle install --jobs 4 --retry 3
+
+      - name: Run tests
+        run: bundle exec rake test
+
+      - name: Run build gem file
+        run: gem build dnsbl-client.gemspec

@@ -19,10 +19,10 @@ Or install it yourself as:
 ## Usage
 
 	require "dnsbl/client"
-	c = DNSBL::Client.new 
+	c = DNSBL::Client.new
 	c.lookup("203.150.14.85")
 	=> [#<struct DNSBL::DNSBLResult dnsbl="UCEPROTECT1", query="85.14.150.203.dnsbl-1.uceprotect.net", result="127.0.0.2", meaning="Blacklisted", timing=0.0247988700866699>, #<struct DNSBL::DNSBLResult dnsbl="BARRACUDA", query="85.14.150.203.b.barracudacentral.org", result="127.0.0.2", meaning="Listed", timing=0.0266849994659424>]
-	
+
 	c.add_dnsbl("superdnsbl","super.dnsbl.com",'ip',{"0"=>"OK","127.0.0.2"=>"Blacklisted"})
 	puts c.dnsbls.join(" ")
 
