@@ -18,15 +18,17 @@ URIBL:
   127.0.0.8: Address not listed on black and are either very young (domain age via whois), or use whois privacy features to protect their identity.
   127.0.0.2: Address belonging to and used by spammers
 SURBL:
-  127.0.0.64: jwSpamSpy + Prolocation data source
-  127.0.0.32: AbuseButler spamvertised sites
-  127.0.0.4: sa-blacklist and other sources
   domain: multi.surbl.org
   type: domain
+  bitmask: true
   "0": OK
-  127.0.0.8: Phishing data source
-  127.0.0.16: Outblaze spamvertised sites
-  127.0.0.2: SpamCop message-body URI domains
+  127.0.0.1: Query blocked (public resolver or usage policy); not a listing
+  127.0.0.4: Disposable email domain (DM)
+  127.0.0.8: Phishing site (PH)
+  127.0.0.16: Malware site (MW)
+  127.0.0.32: Click tracker domain (CT)
+  127.0.0.64: Spam and abuse site (ABUSE)
+  127.0.0.128: Cracked site (CR)
 SPAMCOP:
   domain: bl.spamcop.net
   type: ip
