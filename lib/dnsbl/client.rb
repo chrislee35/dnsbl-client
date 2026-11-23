@@ -205,7 +205,7 @@ module DNSBL # :nodoc:
           results.concat ip_results(name, ip, Regexp.last_match(5), data)
         else
           @dnsbls.each do |dnsblname, config|
-            next unless name.to_s.end_with? config['domain']
+            next unless name.to_s.end_with? ".#{config['domain']}"
 
             meaning = if config['decoder']
                         send :"#{config['decoder']}_decoder", data.address.to_s

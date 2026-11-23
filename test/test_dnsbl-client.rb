@@ -74,6 +74,19 @@ class TestDNSBLClient < Minitest::Test
     assert_equal ['203.150.14.85'], res.map(&:item)
   end
 
+  def test_decode_domain_answer_goes_to_the_list_whose_zone_it_belongs_to
+    # dbl.example.dnsbl also ends with bl.example.dnsbl, so zones must be matched on a label boundary
+    c = DNSBL::Client.new
+    c.add_dnsbl 'IPLIST', 'bl.example.dnsbl', 'ip'
+    c.add_dnsbl 'DOMAINLIST', 'dbl.example.dnsbl', 'domain'
+    c.instance_variable_set :@starttime, Time.now.to_f
+    reply = Resolv::DNS::Message.new 1
+    reply.add_answer 'spammer.example.com.dbl.example.dnsbl', 60, Resolv::DNS::Resource::IN::A.new('127.0.0.2')
+    res = c.send :decode_response, reply.encode
+    assert_equal ['DOMAINLIST'], res.map(&:dnsbl)
+    assert_equal ['spammer.example.com'], res.map(&:item)
+  end
+
   def test_only_ipv6_capable_lists_are_queried_for_ipv6_addresses
     ipv6_domains = queried_domains_for '2001:db8::1'
     config = YAML.safe_load_file File.expand_path('../data/dnsbl.yaml', __dir__)
