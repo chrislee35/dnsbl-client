@@ -13,7 +13,7 @@ Rake::TestTask.new do |t|
 end
 
 RDoc::Task.new do |rd|
-  rd.main = 'README.doc'
+  rd.main = 'README.md'
   rd.rdoc_files.include 'README.md', 'lib/**/*.rb'
   rd.options << '--all'
   rd.options << '--verbose'
