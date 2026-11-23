@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-lib = File.expand_path 'lib', __dir__
-$LOAD_PATH.unshift lib unless $LOAD_PATH.include? lib
-require 'dnsbl/client/version'
+require_relative 'lib/dnsbl/client/version'
 
 Gem::Specification.new do |spec|
   spec.name          = 'dnsbl-client'
@@ -11,19 +9,23 @@ Gem::Specification.new do |spec|
   spec.email         = ['rubygems@chrislee.dhs.org']
   spec.description   = 'simple interface to lookup blacklists results'
   spec.summary       = 'queries various DNS Blacklists'
-  spec.homepage      = 'http://github.com/chrislee35/dnsbl-client'
+  spec.homepage      = 'https://github.com/chrislee35/dnsbl-client'
   spec.license       = 'MIT'
 
-  spec.files         = Dir['lib/*.rb'] + Dir['lib/**/*.rb'] + Dir['bin/*']
-  spec.files        += Dir['data/*'] + Dir['test/*']
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
-  spec.test_files    = spec.files.grep %r{^(test|spec|features)/}
-  spec.require_paths = ['lib']
-  spec.required_ruby_version = '>= 2.7'
+  spec.metadata = {
+    'source_code_uri' => spec.homepage,
+    'bug_tracker_uri' => "#{spec.homepage}/issues",
+    'rubygems_mfa_required' => 'true'
+  }
 
-  spec.add_development_dependency 'bundler', '~> 2.3'
-  spec.add_development_dependency 'rake', '~> 13'
-  spec.add_development_dependency 'minitest'
-  spec.add_development_dependency 'rubocop'
-  spec.add_development_dependency 'rubocop-performance'
+  spec.files         = Dir['lib/**/*.rb', 'bin/*', 'data/*', 'LICENSE.txt', 'README.md']
+  spec.bindir        = 'bin'
+  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  spec.require_paths = ['lib']
+  spec.required_ruby_version = '>= 3.2'
+
+  spec.add_development_dependency 'minitest', '~> 6.0'
+  spec.add_development_dependency 'rake', '~> 13.0'
+  spec.add_development_dependency 'rubocop', '~> 1.0'
+  spec.add_development_dependency 'rubocop-performance', '~> 1.0'
 end
