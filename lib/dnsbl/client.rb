@@ -76,10 +76,12 @@ module DNSBL # :nodoc:
     end
 
     # allows the adding of a new DNSBL to the set of configured DNSBLs
-    def add_dnsbl(name, domain, type = 'ip', codes = { '0' => 'OK', '127.0.0.2' => 'Blacklisted' })
+    # set ipv6 to true only if the list answers IPv6 queries, otherwise IPv6 addresses are not sent to it
+    def add_dnsbl(name, domain, type = 'ip', codes = { '0' => 'OK', '127.0.0.2' => 'Blacklisted' }, ipv6: false)
       @dnsbls[name] = codes
       @dnsbls[name]['domain'] = domain
       @dnsbls[name]['type'] = type
+      @dnsbls[name]['ipv6'] = true if ipv6
     end
 
     # returns a list of DNSBL names currently configured
@@ -101,17 +103,16 @@ module DNSBL # :nodoc:
         sent = 0
         # record the start time
         @starttime = Time.now.to_f
-        # determine the type of query
-        itemtype = item.match?(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/) ? 'ip' : 'domain'
-        if item.match?(/^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$/) # rubocop: disable Layout/LineLength
-          itemtype = 'ip'
-        end
+        # determine the type of query: an IPv4 or IPv6 address is an 'ip' lookup, anything else is a domain
+        ip = parse_ip item
+        itemtype = ip ? 'ip' : 'domain'
 
         # for each dnsbl that supports our type, create the DNS query packet and send it
         # rotate across our configured name servers and increment sent
         @dnsbls.each do |name, config|
           next if config['disabled']
           next unless config['type'] == itemtype
+          next if ip&.ipv6? && !config['ipv6']
 
           begin
             msg = encode_query item, itemtype, config['domain'], config['apikey']
@@ -156,12 +157,25 @@ module DNSBL # :nodoc:
 
     private
 
+    # parses an IPv4 or IPv6 address (ignoring surrounding whitespace and any IPv6 zone id), returns nil if the item is not an address
+    def parse_ip(item)
+      return if item.include? '/'
+
+      IPAddr.new item.strip.sub(/%.*\z/, '')
+    rescue IPAddr::Error
+      nil
+    end
+
+    # converts the nibble-reversed label of an IPv6 query back into a normal IPv6 address
+    def ipv6_from_nibbles(label)
+      IPAddr.new(label.delete('.').reverse.scan(/.{4}/).join(':')).to_s
+    end
+
     # converts an ip or a hostname into the DNS query packet requires to lookup the result
     def encode_query(item, itemtype, domain, apikey = nil)
       label = case itemtype
               when 'ip'
-                ip = IPAddr.new item
-                ip.reverse.gsub('.ip6.arpa', '').gsub('.in-addr.arpa', '')
+                parse_ip(item).reverse.gsub('.ip6.arpa', '').gsub('.in-addr.arpa', '')
               when 'domain'
                 normalize item
               end
@@ -180,20 +194,15 @@ module DNSBL # :nodoc:
       reply = Resolv::DNS::Message.decode buf
       results = []
       reply.each_answer do |name, _ttl, data|
-        if name.to_s =~ /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(.+)$/
+        # IPv6 nibble labels must be checked first: their leading digits can also look like an IPv4 address
+        if name.to_s =~ /^((?:\h\.){31}\h)\.(.+)$/
+          results.concat ip_results(name, ipv6_from_nibbles(Regexp.last_match(1)), Regexp.last_match(2), data)
+        elsif name.to_s =~ /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(.+)$/
           ip = [Regexp.last_match(4),
                 Regexp.last_match(3),
                 Regexp.last_match(2),
                 Regexp.last_match(1)].join '.'
-          domain = Regexp.last_match 5
-          @dnsbls.each do |dnsblname, config|
-            next unless data.is_a? Resolv::DNS::Resource::IN::A
-            next unless domain == config['domain']
-
-            meaning = config[data.address.to_s] || data.address.to_s
-            results << DNSBLResult.new(dnsblname, ip, name.to_s, data.address.to_s, meaning, Time.now.to_f - @starttime)
-            break
-          end
+          results.concat ip_results(name, ip, Regexp.last_match(5), data)
         else
           @dnsbls.each do |dnsblname, config|
             next unless name.to_s.end_with? config['domain']
@@ -216,6 +225,19 @@ module DNSBL # :nodoc:
         end
       end
       results
+    end
+
+    # builds the result (at most one) for an answer to an IP query against the list that owns the queried domain
+    def ip_results(name, ip, domain, data)
+      return [] unless data.is_a? Resolv::DNS::Resource::IN::A
+
+      @dnsbls.each do |dnsblname, config|
+        next unless domain == config['domain']
+
+        meaning = config[data.address.to_s] || data.address.to_s
+        return [DNSBLResult.new(dnsblname, ip, name.to_s, data.address.to_s, meaning, Time.now.to_f - @starttime)]
+      end
+      []
     end
 
     # decodes the response from Project Honey Pot's service

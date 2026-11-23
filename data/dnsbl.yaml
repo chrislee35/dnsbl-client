@@ -30,11 +30,13 @@ SURBL:
 SPAMCOP:
   domain: bl.spamcop.net
   type: ip
+  ipv6: true
   "0": OK
   127.0.0.2: Spam source
 DRONEBL:
   domain: dnsbl.dronebl.org
   type: ip
+  ipv6: true
   "0": OK
   127.0.0.1: Host listed in DroneBL
   127.0.0.2: Sample
@@ -53,6 +55,7 @@ DRONEBL:
 BARRACUDA:
   domain: b.barracudacentral.org
   type: ip
+  ipv6: true
   "0": OK
   127.0.0.2: Listed
 CBL:
@@ -86,10 +89,12 @@ MANITU:
 UCEPROTECT1:
   domain: dnsbl-1.uceprotect.net
   type: ip
+  ipv6: true
   127.0.0.2: Blacklisted
 UCEPROTECT2:
   domain: dnsbl-2.uceprotect.net
   type: ip
+  ipv6: true
   127.0.0.2: Blacklisted
 UCEPROTECT3:
   domain: dnsbl-3.uceprotect.net
@@ -98,10 +103,12 @@ UCEPROTECT3:
 WHITELIST:
   domain: ips.whitelisted.org
   type: ip
+  ipv6: true
   127.0.0.2: Whitelisted
 BACKSCATTERER:
   domain: ips.backscatterer.org
   type: ip
+  ipv6: true
   127.0.0.2: Backscatterer
 PROJECTHONEYPOT:
   domain: dnsbl.httpbl.org
@@ -116,6 +123,7 @@ TOREXITNODE:
 SPFBL:
   domain: dnsbl.spfbl.net
   type: ip
+  ipv6: true
   127.0.0.2: Poor reputation, confirmed by anonymous complaints.
   127.0.0.3: Responsible party for abuse is hard to identify, or the MTA does not comply with RFC 5321.
   127.0.0.4: No mail service identified (e.g. NAT router, residential connection); informational, not necessarily a spam source.

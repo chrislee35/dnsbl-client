@@ -35,6 +35,82 @@ class TestDNSBLClient < Minitest::Test
     assert res.count >= c.dnsbls.count
   end
 
+  def test_encode_ipv6_query_as_reversed_nibbles
+    c = DNSBL::Client.new
+    msg = c.send :encode_query, '2607:f8b0:4004:805::2004', 'ip', 'example.dnsbl'
+    question = Resolv::DNS::Message.decode(msg).question.first.first.to_s
+    assert_equal '4.0.0.2.0.0.0.0.0.0.0.0.0.0.0.0.5.0.8.0.4.0.0.4.0.b.8.f.7.0.6.2.example.dnsbl', question
+  end
+
+  def test_encode_ipv4_query_as_reversed_octets
+    c = DNSBL::Client.new
+    msg = c.send :encode_query, '203.150.14.85', 'ip', 'example.dnsbl'
+    assert_equal '85.14.150.203.example.dnsbl', Resolv::DNS::Message.decode(msg).question.first.first.to_s
+  end
+
+  def test_decode_ipv6_answer_to_compressed_address
+    # the RFC 5782 IPv6 test entry; its nibbles start with four digits, which must not be mistaken for an IPv4 query
+    c = DNSBL::Client.new
+    c.add_dnsbl 'v6list', 'v6.example.dnsbl', 'ip', { '127.0.0.2' => 'Listed' }, ipv6: true
+    c.instance_variable_set :@starttime, Time.now.to_f
+    query = '2.0.0.0.0.0.f.7.f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.v6.example.dnsbl'
+    reply = Resolv::DNS::Message.new 1
+    reply.add_answer query, 60, Resolv::DNS::Resource::IN::A.new('127.0.0.2')
+    res = c.send :decode_response, reply.encode
+    assert_equal 1, res.length
+    assert_equal 'v6list', res[0].dnsbl
+    assert_equal '::ffff:127.0.0.2', res[0].item
+    assert_equal '127.0.0.2', res[0].result
+    assert_equal 'Listed', res[0].meaning
+  end
+
+  def test_decode_ipv4_answer_still_reverses_octets
+    c = DNSBL::Client.new
+    c.add_dnsbl 'v4list', 'v4.example.dnsbl', 'ip', { '127.0.0.2' => 'Listed' }
+    c.instance_variable_set :@starttime, Time.now.to_f
+    reply = Resolv::DNS::Message.new 1
+    reply.add_answer '85.14.150.203.v4.example.dnsbl', 60, Resolv::DNS::Resource::IN::A.new('127.0.0.2')
+    res = c.send :decode_response, reply.encode
+    assert_equal ['203.150.14.85'], res.map(&:item)
+  end
+
+  def test_only_ipv6_capable_lists_are_queried_for_ipv6_addresses
+    ipv6_domains = queried_domains_for '2001:db8::1'
+    config = YAML.safe_load_file File.expand_path('../data/dnsbl.yaml', __dir__)
+    expected = config.values.filter_map { |v| v['domain'] if v['type'] == 'ip' && v['ipv6'] && !v['disabled'] }
+    refute_empty expected
+    assert_equal expected.sort, ipv6_domains.sort
+  end
+
+  def test_all_ip_lists_are_queried_for_ipv4_addresses
+    config = YAML.safe_load_file File.expand_path('../data/dnsbl.yaml', __dir__)
+    expected = config.values.filter_map { |v| v['domain'] if v['type'] == 'ip' && !v['disabled'] }
+    assert_equal expected.sort, queried_domains_for('192.0.2.1').sort
+  end
+
+  def test_ipv6_items_are_not_treated_as_domains
+    assert_empty queried_domains_for('2001:db8::1').grep(/uribl|surbl/)
+    assert_empty queried_domains_for('[2001:db8::1]').grep(/uribl|surbl/)
+  end
+
+  def test_return_hits_for_ipv6_test_entry
+    c = DNSBL::Client.new
+    c.nameservers = NAME_SERVERS
+    # RFC 5782 section 2.4: IPv6 DNSBLs should list ::FFFF:7F00:2
+    res = c.lookup '::ffff:7f00:2'
+    assert_operator res.length, :>=, 1, 'expected at least one IPv6-capable list to list the RFC 5782 test entry'
+    assert(res.all? { |r| r.item == '::ffff:127.0.0.2' })
+  end
+
+  def test_return_no_hits_for_ipv6_documentation_address
+    c = DNSBL::Client.new
+    c.nameservers = NAME_SERVERS
+    # 2001:db8::/32 is reserved for documentation. ::1 is not used because SPFBL flags it as "no mail service"
+    res = c.lookup '2001:db8::1'
+    puts res if res.length.positive?
+    assert_empty res
+  end
+
   def test_return_results_for_bad_domains
     c = DNSBL::Client.new
     c.nameservers = NAME_SERVERS
@@ -205,5 +281,26 @@ PROJECTHONEYPOT:
     assert_equal 'example.act.edu.au', c.normalize('example.act.edu.au')
     assert_equal 'example.act.edu.au', c.normalize('www.example.act.edu.au')
     assert_equal 'example.act.edu.au', c.normalize('foo.bar.example.act.edu.au')
+  end
+
+  private
+
+  # sends a lookup to a local UDP socket instead of a real nameserver and returns the DNSBL domains that were queried
+  def queried_domains_for(item)
+    server = UDPSocket.new
+    server.bind '127.0.0.1', 0
+    c = DNSBL::Client.new
+    c.nameservers = [['127.0.0.1', server.addr[1]]]
+    c.instance_variable_set :@timeout, 0.05
+    c.lookup item
+    queries = []
+    begin
+      loop { queries << Resolv::DNS::Message.decode(server.recvfrom_nonblock(4096).first) }
+    rescue IO::WaitReadable
+      nil
+    end
+    queries.map { |q| q.question.first.first.to_s.sub(/\A(?:(?:\h\.){31}\h|(?:\d+\.){3}\d+)\./, '') }
+  ensure
+    server&.close
   end
 end
