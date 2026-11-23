@@ -81,6 +81,11 @@ code is in [data/dnsbl.yaml](data/dnsbl.yaml). RFC 5782 describes common DNSBL c
     $ bundle exec rake test       # run the tests
     $ bundle exec rubocop         # lint
     $ bundle exec rake rdoc       # build the API documentation into html/
+    $ bundle exec rake update_tlds  # refresh data/two-level-tlds and data/three-level-tlds from the Public Suffix List
+
+The two- and three-level suffix lists in `data/` are used to reduce a hostname to the domain that domain blacklists are queried for
+(`www.example.co.uk` becomes `example.co.uk`). `rake update_tlds` downloads the current [Public Suffix List](https://publicsuffix.org/)
+and regenerates both files; pass a local copy with `rake "update_tlds[path/to/public_suffix_list.dat]"`.
 
 Some tests query live DNS blacklists, so they depend on the network and on those services' current behavior. The Project Honeypot test
 is skipped unless `PHPAPIKEY` is set.
