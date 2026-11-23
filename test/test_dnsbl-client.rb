@@ -118,6 +118,29 @@ class TestDNSBLClient < Minitest::Test
     assert_equal ['127.0.0.12'], c.send(:decode_response, reply.encode).map(&:meaning)
   end
 
+  def test_spamhaus_error_answers_are_not_described_as_listings
+    c = DNSBL::Client.new
+    c.instance_variable_set :@starttime, Time.now.to_f
+    { 'zen.spamhaus.org' => 'SPAMHAUS', 'cbl.abuseat.org' => 'CBL' }.each do |zone, name|
+      reply = Resolv::DNS::Message.new 1
+      reply.add_answer "2.0.0.127.#{zone}", 60, Resolv::DNS::Resource::IN::A.new('127.255.255.254')
+      res = c.send :decode_response, reply.encode
+      assert_equal [name], res.map(&:dnsbl)
+      assert_match(/not a listing/, res[0].meaning)
+    end
+  end
+
+  def test_spamhaus_dbl_is_a_domain_list_with_its_return_codes
+    c = DNSBL::Client.new
+    c.instance_variable_set :@starttime, Time.now.to_f
+    reply = Resolv::DNS::Message.new 1
+    reply.add_answer 'dbltest.com.dbl.spamhaus.org', 60, Resolv::DNS::Resource::IN::A.new('127.0.1.2')
+    res = c.send :decode_response, reply.encode
+    assert_equal ['SPAMHAUS_DBL'], res.map(&:dnsbl)
+    assert_equal ['Spam domain'], res.map(&:meaning)
+    assert_equal ['dbltest.com'], res.map(&:item)
+  end
+
   def test_only_ipv6_capable_lists_are_queried_for_ipv6_addresses
     ipv6_domains = queried_domains_for '2001:db8::1'
     config = YAML.safe_load_file File.expand_path('../data/dnsbl.yaml', __dir__)
