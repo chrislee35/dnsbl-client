@@ -9,6 +9,7 @@ unless Kernel.respond_to? :require_relative
 end
 
 require_relative 'helper'
+require 'tempfile'
 
 class TestDNSBLClient < Minitest::Test
   NAME_SERVERS = [['4.2.2.2', 53]].freeze
@@ -130,6 +131,32 @@ class TestDNSBLClient < Minitest::Test
     assert_equal 'co.uk', c.normalize('co.uk')
     assert_equal 'zmail.ru', c.normalize('zmail.ru')
     assert_equal 'example.co.uk', c.normalize('www.example.co.uk')
+  end
+
+  def test_normalize_uses_the_longest_matching_public_suffix
+    with_suffix_lists %w[co.uk ca.us], %w[k12.ca.us] do |c|
+      assert_equal 'example.com', c.normalize('www.example.com')
+      assert_equal 'example.co.uk', c.normalize('a.b.example.co.uk')
+      assert_equal 'school.k12.ca.us', c.normalize('www.school.k12.ca.us')
+      assert_equal 'k12.ca.us', c.normalize('k12.ca.us')
+      assert_equal 'city.ca.us', c.normalize('www.city.ca.us')
+    end
+  end
+
+  def test_normalize_wildcard_suffixes_and_their_exceptions
+    # *.ck means every name one label below ck is a suffix, except www.ck which is a normal domain
+    with_suffix_lists %w[*.ck !www.ck], %w[*.nom.br !city.nom.br] do |c|
+      assert_equal 'example.co.ck', c.normalize('www.example.co.ck')
+      assert_equal 'www.example.ck', c.normalize('www.example.ck')
+      assert_equal 'www.ck', c.normalize('www.ck')
+      assert_equal 'www.ck', c.normalize('mail.www.ck')
+      assert_equal 'shop.example.nom.br', c.normalize('www.shop.example.nom.br')
+      assert_equal 'city.nom.br', c.normalize('www.city.nom.br')
+    end
+  end
+
+  def test_normalize_single_label_item
+    assert_equal 'localhost', DNSBL::Client.new.normalize('localhost')
   end
 
   def test_return_results_for_bad_domains
@@ -305,6 +332,19 @@ PROJECTHONEYPOT:
   end
 
   private
+
+  # builds a client whose two- and three-level suffix lists come from the given arrays
+  def with_suffix_lists(two_level, three_level)
+    files = [two_level, three_level].map do |list|
+      file = Tempfile.new 'suffixes'
+      file.write list.join("\n")
+      file.flush
+      file
+    end
+    yield DNSBL::Client.new(YAML.safe_load_file(File.expand_path('../data/dnsbl.yaml', __dir__)), files[0].path, files[1].path)
+  ensure
+    files&.each(&:close!)
+  end
 
   # sends a lookup to a local UDP socket instead of a real nameserver and returns the DNSBL domains that were queried
   def queried_domains_for(item)

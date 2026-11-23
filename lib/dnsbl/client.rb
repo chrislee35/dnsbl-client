@@ -63,16 +63,14 @@ module DNSBL # :nodoc:
     end
 
     # Converts a hostname to the domain: e.g., www.google.com => google.com, science.somewhere.co.uk => somewhere.co.uk
+    # The domain is the longest public suffix plus one more label, using the two- and three-level suffix lists.
     def normalize(domain)
       # strip off the protocol (\w{1,20}://), the URI (/), parameters (?), port number (:), and username (.*@)
       # then split into parts via the .
       parts = domain.gsub(%r{^\w{1,20}://}, '').gsub(%r{[/?:].*}, '').gsub(/.*?@/, '').split('.')
-      # grab the last two parts of the domain
-      dom = parts[-2, 2].join '.'
-      # if the dom is in the two_level_tld list, then use three parts (unless the item is itself just the suffix, e.g. co.uk)
-      dom = parts[-3, 3].join '.' if @two_level_tld.index(dom) && parts.length >= 3
-      dom = parts[-4, 4].join '.' if @three_level_tld.index(dom) && parts.length >= 4
-      dom
+      suffix_length = public_suffix_length parts
+      # an item that is itself just a suffix (e.g. co.uk) has no extra label to include and is returned as is
+      parts.last(suffix_length + 1).join '.'
     end
 
     # allows the adding of a new DNSBL to the set of configured DNSBLs
@@ -156,6 +154,21 @@ module DNSBL # :nodoc:
     end
 
     private
+
+    # returns how many trailing labels of parts form the longest public suffix (at least one, the TLD).
+    # list entries are suffixes (co.uk), wildcards that make every name one label below them a suffix (*.ck),
+    # and exceptions to a wildcard (!www.ck), which are themselves registrable so their suffix is one label shorter
+    def public_suffix_length(parts)
+      [[3, @three_level_tld], [2, @two_level_tld]].each do |count, list|
+        next if parts.length < count
+
+        labels = parts.last count
+        name = labels.join '.'
+        return count - 1 if list.include? "!#{name}"
+        return count if list.include?(name) || list.include?("*.#{labels.drop(1).join '.'}")
+      end
+      1
+    end
 
     # parses an IPv4 or IPv6 address (ignoring surrounding whitespace and any IPv6 zone id), returns nil if the item is not an address
     def parse_ip(item)
