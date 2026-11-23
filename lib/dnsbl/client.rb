@@ -7,32 +7,7 @@ require 'resolv'
 require 'socket'
 require 'yaml'
 require 'ipaddr'
-
-# This is a monkeypatch for the built-in Ruby DNS resolver to specify nameservers
-class Resolv
-  class DNS
-    class Config
-      # Monkeypatch the nameservers to set a default if there are no defined nameservers
-      def nameservers
-        return @nameservers if defined?(@nameservers)
-
-        lazy_initialize
-        if respond_to? :nameserver_port
-          @nameservers = nameserver_port
-        else
-          @nameserver ||= ['4.2.2.2',
-                           '4.2.2.5',
-                           '8.8.4.4',
-                           '8.8.8.8',
-                           '208.67.222.222',
-                           '208.67.220.220'].shuffle
-          @nameservers ||= @nameserver.map { |i| [i, 53] }
-        end
-        @nameservers
-      end
-    end
-  end
-end
+require 'dnsbl/client/resolv_patch'
 
 module DNSBL # :nodoc:
   # DNSBLResult holds the result of a DNSBL lookup
@@ -51,7 +26,7 @@ module DNSBL # :nodoc:
     # initialize a new DNSBL::Client object
     # the config file automatically points to a YAML file containing the list of DNSBLs and their return codes
     # the two-level-tlds file lists most of the two level tlds, needed for hostname to domain normalization
-    def initialize(config = YAML.safe_load(File.read("#{File.expand_path '../../data', __dir__}/dnsbl.yaml")),
+    def initialize(config = YAML.safe_load_file("#{File.expand_path '../../data', __dir__}/dnsbl.yaml"),
                    two_level_tldfile = "#{File.expand_path '../../data', __dir__}/two-level-tlds",
                    three_level_tldfile = "#{File.expand_path '../../data', __dir__}/three-level-tlds")
       @dnsbls = config
@@ -59,12 +34,8 @@ module DNSBL # :nodoc:
       @first_only = false
       @two_level_tld = []
       @three_level_tld = []
-      File.open(two_level_tldfile).readlines.each do |l|
-        @two_level_tld << l.strip
-      end
-      File.open(three_level_tldfile).readlines.each do |l|
-        @three_level_tld << l.strip
-      end
+      @two_level_tld = File.readlines(two_level_tldfile).map(&:strip)
+      @three_level_tld = File.readlines(three_level_tldfile).map(&:strip)
       @sockets = []
       config = Resolv::DNS::Config.new
 
@@ -228,7 +199,7 @@ module DNSBL # :nodoc:
             next unless name.to_s.end_with? config['domain']
 
             meaning = if config['decoder']
-                        send "#{config['decoder']}_decoder".to_sym, data.address.to_s
+                        send :"#{config['decoder']}_decoder", data.address.to_s
                       elsif config[data.address.to_s]
                         config[data.address.to_s]
                       else
@@ -264,10 +235,10 @@ module DNSBL # :nodoc:
         days, threatscore, flags = octets[1, 3]
         flags = flags.to_i
         types = []
-        types << 'suspicious' if (flags & 0x1) == 0x1
-        types << 'harvester' if (flags & 0x2) == 0x2
-        types << 'comment spammer' if (flags & 0x4) == 0x4
-        types << 'reserved' if (flags & 0xf8).positive?
+        types << 'suspicious' if flags.allbits? 0x1
+        types << 'harvester' if flags.allbits? 0x2
+        types << 'comment spammer' if flags.allbits? 0x4
+        types << 'reserved' if flags.anybits? 0xf8
         type = types.join ','
         "days=#{days},score=#{threatscore},type=#{type}"
       end

@@ -30,7 +30,7 @@ class TestDNSBLClient < Minitest::Test
     c.nameservers = NAME_SERVERS
     res = c.lookup '127.0.0.2'
     c.dnsbls.each do |bls|
-      assert (res.detect { |ci| ci.dnsbl == bls }), "#{bls} missing"
+      assert res.detect { |ci| ci.dnsbl == bls }, "#{bls} missing"
     end
     assert res.count >= c.dnsbls.count
   end
