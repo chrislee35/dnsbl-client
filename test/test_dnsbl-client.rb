@@ -124,6 +124,14 @@ class TestDNSBLClient < Minitest::Test
     assert_empty res
   end
 
+  def test_normalize_leaves_a_bare_public_suffix_unchanged
+    c = DNSBL::Client.new
+    # these are in the two-level TLD list, so there is no third label to include
+    assert_equal 'co.uk', c.normalize('co.uk')
+    assert_equal 'zmail.ru', c.normalize('zmail.ru')
+    assert_equal 'example.co.uk', c.normalize('www.example.co.uk')
+  end
+
   def test_return_results_for_bad_domains
     c = DNSBL::Client.new
     c.nameservers = NAME_SERVERS

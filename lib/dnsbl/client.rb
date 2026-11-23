@@ -69,9 +69,9 @@ module DNSBL # :nodoc:
       parts = domain.gsub(%r{^\w{1,20}://}, '').gsub(%r{[/?:].*}, '').gsub(/.*?@/, '').split('.')
       # grab the last two parts of the domain
       dom = parts[-2, 2].join '.'
-      # if the dom is in the two_level_tld list, then use three parts
-      dom = parts[-3, 3].join '.' if @two_level_tld.index dom
-      dom = parts[-4, 4].join '.' if @three_level_tld.index dom
+      # if the dom is in the two_level_tld list, then use three parts (unless the item is itself just the suffix, e.g. co.uk)
+      dom = parts[-3, 3].join '.' if @two_level_tld.index(dom) && parts.length >= 3
+      dom = parts[-4, 4].join '.' if @three_level_tld.index(dom) && parts.length >= 4
       dom
     end
 
@@ -121,7 +121,7 @@ module DNSBL # :nodoc:
             @socket_index %= @sockets.length
             sent += 1
           rescue StandardError => e
-            puts "error for #{name}: e"
+            puts "error for #{name}: #{e}"
             puts e.backtrace.join("\n")
           end
         end
