@@ -15,10 +15,12 @@ Gem::Specification.new do |spec|
   spec.metadata = {
     'source_code_uri' => spec.homepage,
     'bug_tracker_uri' => "#{spec.homepage}/issues",
+    'changelog_uri' => "#{spec.homepage}/blob/master/CHANGELOG.md",
+    'documentation_uri' => 'https://chrislee35.github.io/dnsbl-client/',
     'rubygems_mfa_required' => 'true'
   }
 
-  spec.files         = Dir['lib/**/*.rb', 'bin/*', 'data/*', 'LICENSE.txt', 'README.md']
+  spec.files         = Dir['lib/**/*.rb', 'bin/*', 'data/*', 'LICENSE.txt', 'README.md', 'CHANGELOG.md']
   spec.bindir        = 'bin'
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
