@@ -34,17 +34,29 @@ c.lookup('127.0.0.2')
 # => [#<struct DNSBL::DNSBLResult dnsbl="BARRACUDA", item="127.0.0.2", query="2.0.0.127.b.barracudacentral.org",
 #      result="127.0.0.2", meaning="Listed", timing=0.026>, ...]
 
+# IPv6 addresses (any notation: compressed, expanded, bracketed, or with a zone id)
+c.lookup('2607:f8b0:4004:805::2004')
+
 # domain names
 c.lookup('example.com')
 
-# add your own list: name, DNS zone, type ('ip' or 'domain'), and a map of result codes to meanings
-c.add_dnsbl('superdnsbl', 'super.dnsbl.com', 'ip', { '0' => 'OK', '127.0.0.2' => 'Blacklisted' })
+# add your own list: name, DNS zone, type ('ip' or 'domain'), a map of result codes to meanings,
+# and ipv6: true if the list answers IPv6 queries
+c.add_dnsbl('superdnsbl', 'super.dnsbl.com', 'ip', { '0' => 'OK', '127.0.0.2' => 'Blacklisted' }, ipv6: true)
 puts c.dnsbls.join(' ')
 ```
 
 A command line client is installed as well. It takes addresses as arguments, or one per line on standard input:
 
     $ dnsbl-client 127.0.0.2
+
+### IPv6
+
+IPv6 addresses are queried as RFC 5782 describes: the 32 nibbles of the expanded address, reversed and dot-separated, are prepended to the
+list's zone. Most DNSBLs are IPv4-only and would answer "not listed" for every IPv6 address, which is a false negative, so IPv6 addresses are
+only sent to lists marked `ipv6: true` in [data/dnsbl.yaml](data/dnsbl.yaml). A list was marked only after it listed the RFC 5782 IPv6 test
+entry `::FFFF:7F00:2` and did not list `2001:db8::1`. If you know that another list supports IPv6, set `ipv6: true` for it in your
+configuration.
 
 ### Choosing a resolver
 
@@ -61,7 +73,7 @@ c.nameservers = [['192.0.2.53', 53]]
 Result codes mean different things on different lists, and not every answer is a spam verdict. For instance, `dnsbl.spfbl.net` returns
 `127.0.0.4` for addresses that do not appear to run a mail service (such as NAT routers and residential connections). The meaning for each
 code is in [data/dnsbl.yaml](data/dnsbl.yaml). RFC 5782 describes common DNSBL conventions, including the test entries `127.0.0.2`
-(should be listed) and `127.0.0.1` (should not be).
+(should be listed) and `127.0.0.1` (should not be), and `::FFFF:7F00:2` as the IPv6 equivalent of `127.0.0.2`.
 
 ## Development
 
