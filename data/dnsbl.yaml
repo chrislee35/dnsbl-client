@@ -128,3 +128,49 @@ SPFBL:
   127.0.0.3: Responsible party for abuse is hard to identify, or the MTA does not comply with RFC 5321.
   127.0.0.4: No mail service identified (e.g. NAT router, residential connection); informational, not necessarily a spam source.
   127.0.0.5: IP range has high abuse volume and its abuse team does not act on reports.
+NORDSPAM:
+  domain: bl.nordspam.com
+  type: ip
+  ipv6: true
+  "0": OK
+  127.0.0.2: Blacklisted by NordSpam.
+NORDSPAM_DBL:
+  domain: dbl.nordspam.com
+  type: domain
+  "0": OK
+  127.0.0.2: Domain blacklisted by NordSpam.
+ZAPBL:
+  domain: dnsbl.zapbl.net
+  type: ip
+  ipv6: true
+  "0": OK
+  127.0.0.2: Listed in ZapBL; spam (or backscatter) received at addresses controlled by the ZapBL administrators, such as spam traps and catchalls.
+S5H:
+  domain: all.s5h.net
+  type: ip
+  ipv6: true
+  "0": OK
+  127.0.0.2: Listed in the System 5 Hosting RBL as a spam source or attack vector.
+JUSTSPAM:
+  domain: dnsbl.justspam.org
+  type: ip
+  ipv6: true
+  "0": OK
+  127.0.0.2: Worst offender; spam seen from this IP, no legitimate mail, and also listed by another independent blacklist.
+MAILSPIKE_Z:
+  domain: z.mailspike.net
+  type: ip
+  ipv6: true
+  "0": OK
+  127.0.0.2: Mailspike zero-hour list; IP currently taking part in a distributed spam wave.
+PSBL:
+  domain: psbl.surriel.com
+  type: ip
+  ipv6: true
+  "0": OK
+  127.0.0.2: Listed in the Passive Spam Block List (sent mail to a spam trap).
+SEM_BLACK:
+  domain: bl.spameatingmonkey.net
+  type: ip
+  "0": OK
+  127.0.0.2: Spam Eating Monkey; sent to spamtrap addresses or matched policy criteria. Intended for scoring rather than rejection.
