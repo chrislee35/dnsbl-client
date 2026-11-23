@@ -15,12 +15,15 @@ SPAMHAUS:
   127.255.255.254: Error, not a listing; anonymous query through a public resolver
   127.255.255.255: Error, not a listing; excessive number of queries
 URIBL:
-  127.0.0.4: Address found in UBE/UCE, and probably honour opt-out requests
   domain: multi.uribl.com
   type: domain
+  bitmask: true
   "0": OK
-  127.0.0.8: Address not listed on black and are either very young (domain age via whois), or use whois privacy features to protect their identity.
-  127.0.0.2: Address belonging to and used by spammers
+  127.0.0.1: Query blocked, possibly due to high volume or a public resolver; not a listing
+  127.0.0.255: Query blocked; not a listing
+  127.0.0.2: Black list; address belonging to and used by spammers
+  127.0.0.4: Grey list; address found in UBE/UCE, and probably honour opt-out requests
+  127.0.0.8: Red list; address not listed on black and either very young (domain age via whois), or uses whois privacy features to protect its identity
 SURBL:
   domain: multi.surbl.org
   type: domain

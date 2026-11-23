@@ -130,6 +130,18 @@ class TestDNSBLClient < Minitest::Test
     end
   end
 
+  def test_uribl_blocked_answer_is_not_described_as_a_listing_and_flags_combine
+    c = DNSBL::Client.new
+    c.instance_variable_set :@starttime, Time.now.to_f
+    { '127.0.0.1' => /not a listing/, '127.0.0.14' => /Black list.*Grey list.*Red list/ }.each do |code, expected|
+      reply = Resolv::DNS::Message.new 1
+      reply.add_answer 'example.com.multi.uribl.com', 60, Resolv::DNS::Resource::IN::A.new(code)
+      res = c.send :decode_response, reply.encode
+      assert_equal ['URIBL'], res.map(&:dnsbl)
+      assert_match expected, res[0].meaning
+    end
+  end
+
   def test_spamhaus_dbl_is_a_domain_list_with_its_return_codes
     c = DNSBL::Client.new
     c.instance_variable_set :@starttime, Time.now.to_f
