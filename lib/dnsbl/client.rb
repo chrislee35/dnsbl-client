@@ -74,12 +74,14 @@ module DNSBL # :nodoc:
     end
 
     # allows the adding of a new DNSBL to the set of configured DNSBLs
-    # set ipv6 to true only if the list answers IPv6 queries, otherwise IPv6 addresses are not sent to it
-    def add_dnsbl(name, domain, type = 'ip', codes = { '0' => 'OK', '127.0.0.2' => 'Blacklisted' }, ipv6: false)
+    # set ipv6 to true only if the list answers IPv6 queries, otherwise IPv6 addresses are not sent to it.
+    # set bitmask to true if the list combines categories by adding the codes of each (e.g. 127.0.0.12 is both 127.0.0.4 and 127.0.0.8)
+    def add_dnsbl(name, domain, type = 'ip', codes = { '0' => 'OK', '127.0.0.2' => 'Blacklisted' }, ipv6: false, bitmask: false)
       @dnsbls[name] = codes
       @dnsbls[name]['domain'] = domain
       @dnsbls[name]['type'] = type
       @dnsbls[name]['ipv6'] = true if ipv6
+      @dnsbls[name]['bitmask'] = true if bitmask
     end
 
     # returns a list of DNSBL names currently configured
@@ -222,10 +224,8 @@ module DNSBL # :nodoc:
 
             meaning = if config['decoder']
                         send :"#{config['decoder']}_decoder", data.address.to_s
-                      elsif config[data.address.to_s]
-                        config[data.address.to_s]
                       else
-                        data.address.to_s
+                        meaning_for config, data.address.to_s
                       end
 
             results << DNSBLResult.new(dnsblname, name.to_s.gsub(".#{config['domain']}", ''),
@@ -240,6 +240,18 @@ module DNSBL # :nodoc:
       results
     end
 
+    # returns the meaning of a result code for a list: an exact match in the list's configuration, or, for a list with the bitmask
+    # option (SURBL), the meanings of every flag set in the last octet joined together (127.0.0.12 is the 4 and 8 flags).
+    # Falls back to the code itself when nothing is known about it.
+    def meaning_for(config, code)
+      return config[code] if config[code]
+      return code unless config['bitmask']
+
+      prefix, last = code.rpartition('.').values_at 0, 2
+      meanings = (1..7).filter_map { |bit| config["#{prefix}.#{1 << bit}"] if last.to_i.anybits? 1 << bit }
+      meanings.empty? ? code : meanings.join(', ')
+    end
+
     # builds the result (at most one) for an answer to an IP query against the list that owns the queried domain
     def ip_results(name, ip, domain, data)
       return [] unless data.is_a? Resolv::DNS::Resource::IN::A
@@ -247,7 +259,7 @@ module DNSBL # :nodoc:
       @dnsbls.each do |dnsblname, config|
         next unless domain == config['domain']
 
-        meaning = config[data.address.to_s] || data.address.to_s
+        meaning = meaning_for config, data.address.to_s
         return [DNSBLResult.new(dnsblname, ip, name.to_s, data.address.to_s, meaning, Time.now.to_f - @starttime)]
       end
       []

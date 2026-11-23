@@ -88,6 +88,36 @@ class TestDNSBLClient < Minitest::Test
     assert_equal ['spammer.example.com'], res.map(&:item)
   end
 
+  def test_bitmask_lists_combine_the_meanings_of_every_flag_set
+    c = DNSBL::Client.new
+    c.add_dnsbl 'FLAGS', 'flags.example.dnsbl', 'domain',
+                { '127.0.0.1' => 'Blocked', '127.0.0.4' => 'Disposable', '127.0.0.8' => 'Phishing', '127.0.0.64' => 'Abuse' },
+                bitmask: true
+    c.instance_variable_set :@starttime, Time.now.to_f
+    {
+      '127.0.0.4' => 'Disposable',
+      '127.0.0.12' => 'Disposable, Phishing',
+      '127.0.0.76' => 'Disposable, Phishing, Abuse',
+      '127.0.0.1' => 'Blocked', # an exact match wins over flag decoding
+      '127.0.0.2' => '127.0.0.2', # no known flag set, so the code is shown
+      '127.0.0.22' => 'Disposable' # unknown flags (2 and 16) are ignored
+    }.each do |code, meaning|
+      reply = Resolv::DNS::Message.new 1
+      reply.add_answer 'example.com.flags.example.dnsbl', 60, Resolv::DNS::Resource::IN::A.new(code)
+      res = c.send :decode_response, reply.encode
+      assert_equal [meaning], res.map(&:meaning), "meaning of #{code}"
+    end
+  end
+
+  def test_lists_without_bitmask_show_unknown_codes_as_they_are
+    c = DNSBL::Client.new
+    c.add_dnsbl 'PLAIN', 'plain.example.dnsbl', 'domain', { '127.0.0.4' => 'Known', '127.0.0.8' => 'Other' }
+    c.instance_variable_set :@starttime, Time.now.to_f
+    reply = Resolv::DNS::Message.new 1
+    reply.add_answer 'example.com.plain.example.dnsbl', 60, Resolv::DNS::Resource::IN::A.new('127.0.0.12')
+    assert_equal ['127.0.0.12'], c.send(:decode_response, reply.encode).map(&:meaning)
+  end
+
   def test_only_ipv6_capable_lists_are_queried_for_ipv6_addresses
     ipv6_domains = queried_domains_for '2001:db8::1'
     config = YAML.safe_load_file File.expand_path('../data/dnsbl.yaml', __dir__)
