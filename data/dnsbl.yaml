@@ -6,6 +6,7 @@ SPAMHAUS:
   127.0.0.6: Illegal 3rd party exploits, including proxies, worms and trojan exploits
   domain: zen.spamhaus.org
   type: ip
+  ipv6: true
   "0": OK
   127.0.0.2: Direct UBE sources, verified spam services and ROKSO spammers
   127.0.0.10: ISP Maintained Policy Block List
@@ -63,6 +64,7 @@ BARRACUDA:
 CBL:
   domain: cbl.abuseat.org
   type: ip
+  ipv6: true
   0: OK
   127.0.0.2: Blacklisted
 FIVETENSG:
