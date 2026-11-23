@@ -4,23 +4,17 @@ on:
   pull_request:
 
 jobs:
-  test:
+  rubocop:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-    - name: Setup Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: 3.0
-        bundler-cache: true
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
 
-    - name: Setup gems
-      run: |
-        bundle install --jobs 4 --retry 3
-
-    - name: Run RuboCop
-      run: |
-        bundle exec rubocop -S
-
+      - name: Run RuboCop
+        run: bundle exec rubocop -S
