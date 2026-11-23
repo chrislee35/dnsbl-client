@@ -13,14 +13,14 @@ require_relative 'helper'
 class TestDNSBLClient < Minitest::Test
   NAME_SERVERS = [['4.2.2.2', 53]].freeze
 
-  def test_return_no_hits_for_0_0_0_254
+  def test_return_no_hits_for_127_0_0_1
     c = DNSBL::Client.new
     c.nameservers = NAME_SERVERS
-    # for some reason DRONEBL returns 127.0.0.255 when queried for 127.0.0.255, so I'll use 127.0.0.254
-    # spfbl started returning 127.0.0.254 for 127.0.0.254, so I'll try 0.0.0.254
-    res = c.lookup '0.0.0.254'
+    # RFC 5782 says 127.0.0.1 must not be listed. Other candidates misbehave: DRONEBL answers 127.0.0.255 for 127.0.0.255,
+    # and SPFBL answers 127.0.0.4 ("no mail service here") for 127.0.0.254 and 0.0.0.254.
+    res = c.lookup '127.0.0.1'
     puts res if res.length.positive?
-    assert res.length.zero?
+    assert_empty res
   end
 
   def test_return_all_lists_for_127_0_0_2

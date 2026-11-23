@@ -186,5 +186,7 @@ TOREXITNODE:
 SPFBL:
   domain: dnsbl.spfbl.net
   type: ip
-  127.0.0.2: Ignoring complaints of spamming by customers.
-  127.0.0.3: Dynamic IP, generic rDNS, no rDNS or invalid FCrDNS.
+  127.0.0.2: Poor reputation, confirmed by anonymous complaints.
+  127.0.0.3: Responsible party for abuse is hard to identify, or the MTA does not comply with RFC 5321.
+  127.0.0.4: No mail service identified (e.g. NAT router, residential connection); informational, not necessarily a spam source.
+  127.0.0.5: IP range has high abuse volume and its abuse team does not act on reports.
